@@ -1,0 +1,46 @@
+--- # Scenario 3 - Shopping_Errands and Meals - No Population
+defines:
+  V: &V 20000
+  sigma: &sigma 150
+  folder: &folder data/utility_datasets
+  save_folder: &save_folder data/utility
+
+points: 
+  folder: *folder
+  file: Point_Grid_10m.csv
+  spacing: &p_spacing 10
+  gen_scale: *V
+components:
+  - name: POI
+    method: add_sparse!
+    scale: 1
+    params:
+      volume: *V
+      spread: *sigma
+      smooth_func: GaussianVolume
+      folder: *folder
+      datasets:
+        - file: Shopping_Errands.csv
+          A: 0.5
+        - file: Meals.csv
+          A: 0.5
+actions:
+  - name: save
+    method: save_utility
+    params:
+      folder: *save_folder
+      prefix: Scenario_3
+      label: Shopping_Meals
+      data:
+        - *V 
+        - *sigma
+        - *p_spacing
+      utility_threshold: 0.0001
+  - name: plot
+    method: plot_utility
+    params:
+      title: Scenario 3 - Shopping_Meals - No Population
+      color_bar:
+        pallet: roma
+        rev: true
+        scale: exp

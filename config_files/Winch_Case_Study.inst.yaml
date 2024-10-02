@@ -1,0 +1,171 @@
+--- # Overall Instance Parameters
+declare: 
+  walk_speed:   &walk_speed 1.25        #m/s - 4.5kph
+  bus_speed:    &bus_speed  15.65       #m/s - 35mph
+  place_string: &place_str  Winchester, MA
+  place_name:   &place_name Winchester
+  crs:          &crs        EPSG:26986
+  inst_file:    &inst_file  data/instances/Winch_Case_Study.zip
+  util_file:    &util_file  data/utility/Winch_All_Catagories_0.7134_20000_100_10.csv
+  graph_folder: &graph_folder data/graphs
+
+generators:
+
+# Load graphs
+  - name: Walk Graph
+    method: load_graph
+    key_val: &walk_graph wg
+    params:
+      folder: *graph_folder
+      filename: walk_graph 
+
+  - name: Road Graph
+    method: load_graph
+    key_val: &road_graph rg
+    params:
+      folder: *graph_folder
+      filename: road_graph 
+
+  - name: Transit Graph
+    method: load_graph
+    key_val: &transit_graph tg
+    params:
+      folder: *graph_folder
+      filename: transit_graph 
+
+  - name: Modify_Transit_Graph
+    method: modify_graph!
+    params:
+      # folder: *graph_folder     
+      # filename: transit_graph_mod
+      graph_key: *transit_graph
+      lookup_key: label
+      add_nodes:
+        - label: NHRML-0078-01_CR-Lowell_0
+          stop_id: NHRML-0078-01
+          route_id: CR-Lowell
+          direction_id: 0
+          stop_name: 'Winchester Center'
+          lat: 42.451088
+          lon: -71.137830
+          x: 229792.3801
+          y: 911236.7358
+          headway: 2800.0
+          dwell_time: 0.0
+          exit_vertex: false
+
+        - label: NHRML-0078-02_CR-Lowell_1
+          stop_id: NHRML-0078-02
+          route_id: CR-Lowell
+          direction_id: 1
+          stop_name: 'Winchester Center'
+          lat: 42.451088
+          lon: -71.137830
+          x: 229792.3801
+          y: 911236.7358
+          headway: 2800.0
+          dwell_time: 0.0
+          exit_vertex: false
+
+      add_edges:
+        - src: NHRML-0073-01_CR-Lowell_0 # Wedgemere Outbound
+          dst: NHRML-0078-01_CR-Lowell_0 # Winch Center Outbound
+          weight: 71.58
+          shape_distance: 750
+          running_time: 71.58
+          s2s_time: 71.58
+          edge_type: route_segment
+
+        - src: NHRML-0078-02_CR-Lowell_1 # Winch Center Inbound
+          dst: NHRML-0073-02_CR-Lowell_1 # Wedgemere Inbound
+          weight: 71.58
+          shape_distance: 750
+          running_time: 71.58
+          s2s_time: 71.58
+          edge_type: route_segment
+
+        - src: NHRML-0078-01_CR-Lowell_0 # Winch Center Outbound
+          dst: NHRML-0127-01_CR-Lowell_0 # Woburn Outbound
+          weight: 357.89
+          shape_distance: 3749.706
+          running_time: 357.89
+          s2s_time: 357.89
+          edge_type: route_segment
+
+        - src: NHRML-0127-02_CR-Lowell_1 # Woburn Inbound
+          dst: NHRML-0078-02_CR-Lowell_1 # Winch Center Inbound
+          weight: 357.89
+          shape_distance: 3749.706
+          running_time: 357.89
+          s2s_time: 357.89
+          edge_type: route_segment
+
+      rmv_edges:
+        - src: NHRML-0073-01_CR-Lowell_0
+          dst: NHRML-0127-01_CR-Lowell_0
+
+        - src: NHRML-0127-02_CR-Lowell_1
+          dst: NHRML-0073-02_CR-Lowell_1
+
+# Operations
+
+  - name: Add_Vertex_Weights
+    method: add_vertex_weights_from_file!
+    params: 
+      input_file: *util_file
+      data_key: *walk_graph
+
+  - name: Prune_Transit
+    method: prune_transit!
+    params:
+      walk_key: *walk_graph
+      transit_key: *transit_graph
+      dist_limit: 65
+      external_utility: data/utility_datasets/all_cat_external_utility.csv
+      # folder: *graph_folder
+      # filename: transit_graph_trim
+
+  - name: Merge_Graphs
+    method: merge_graphs
+    key_val: &baseline_graph bg
+    params:
+      walk_key: *walk_graph
+      transit_key: *transit_graph
+      speed: *walk_speed
+      waiting_time_func: half_headway
+      folder: *graph_folder
+      filename: baseline_graph
+  
+  - name: Add_Bus_Stops
+    method: add_bus_stops!
+    params:
+      road_key: *road_graph
+
+  - name: Opt_Graph
+    method: generate_opt_graph_trap
+    key_val: &opt_graph og
+    params:
+      road_key: *road_graph
+      acc_rate: 1.2
+      dec_rate: -1.6
+      max_speed: *bus_speed
+      folder: *graph_folder
+      filename: opt_graph
+
+  - name: Link_Graphs
+    method: link_graphs!
+    params:
+      baseline_key: *baseline_graph
+      opt_key: *opt_graph
+      speed: *walk_speed
+      folder: *graph_folder
+      filename: opt_graph
+
+  - name: Save_Instance
+    method: save_instance
+    params:
+      filename: *inst_file
+      baseline_key: *baseline_graph
+      opt_key: *opt_graph
+
+

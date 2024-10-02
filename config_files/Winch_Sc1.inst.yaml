@@ -1,0 +1,71 @@
+--- # Overall Instance Parameters
+declare: 
+  walk_speed:   &walk_speed 1.25        #m/s - 4.5kph
+  bus_speed:    &bus_speed  15.65       #m/s - 35mph
+  inst_file:    &inst_file  data/instances/Winch_Scenario_1.zip
+  util_file:    &util_file  data/utility/Scenario_1_Public_Schools_20000_200_10.csv
+  graph_folder: &graph_folder data/graphs
+
+generators:
+
+  # Load graphs
+  - name: Walk Graph
+    method: load_graph
+    key_val: &walk_graph wg
+    params:
+      folder: *graph_folder
+      filename: walk_graph 
+
+  - name: Road Graph
+    method: load_graph
+    key_val: &road_graph rg
+    params:
+      folder: *graph_folder
+      filename: road_graph 
+
+  # Operations
+  - name: Add_Vertex_Weights
+    method: add_vertex_weights_from_file!
+    params: 
+      input_file: *util_file
+      data_key: *walk_graph
+
+  - name: Baseline_Graph
+    method: convert_walk_to_baseline
+    key_val: &baseline_graph bg
+    params:
+      walk_key: *walk_graph
+      folder: *graph_folder
+      filename: baseline_graph
+
+  - name: Add_Bus_Stops
+    method: add_bus_stops!
+    params:
+      road_key: *road_graph
+
+  - name: Opt_Graph
+    method: generate_opt_graph_trap
+    key_val: &opt_graph og
+    params:
+      road_key: *road_graph
+      acc_rate: 1.2
+      dec_rate: -1.6
+      max_speed: *bus_speed
+      folder: *graph_folder
+      filename: opt_graph
+
+  - name: Link_Graphs
+    method: link_graphs!
+    params:
+      baseline_key: *baseline_graph
+      opt_key: *opt_graph
+      speed: *walk_speed
+      folder: *graph_folder
+      filename: opt_graph
+
+  - name: Save_Instance
+    method: save_instance
+    params:
+      filename: *inst_file
+      baseline_key: *baseline_graph
+      opt_key: *opt_graph

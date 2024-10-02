@@ -1,0 +1,58 @@
+--- # Overall Instance Parameters
+declare: 
+  walk_speed:   &walk_speed 1.25        #m/s - 4.5kph
+  bus_speed:    &bus_speed  15.65       #m/s - 35mph
+  place_string: &place_str  Winchester, MA
+  place_name:   &place_name Winchester
+  crs:          &crs        EPSG:26986
+  graph_folder: &graph_folder data/graphs
+
+generators:
+  - name:     Walk_Graph
+    method:   generate_osm_graph
+    key_val:  &walk_graph wg
+    params:
+      speed:  *walk_speed
+      place:  *place_str
+      crs:    *crs
+      resolution: 150
+      folder: *graph_folder
+      filename: walk_graph
+      filters: >
+        ["highway"]["area"!~"yes"]["access"!~"private"]
+        ["highway"!~"abandoned|bus_guideway|construction|cycleway|motor|no|planned|platform|proposed|raceway|razed"]
+        ["foot"!~"no"]["service"!~"private"]
+        ["highway"!~"service"]
+  
+  - name: Road_Graph
+    method: generate_osm_graph
+    key_val: &road_graph rg
+    params:
+      speed:  *bus_speed
+      place:  *place_str
+      crs:    *crs
+      resolution: 250
+      folder: *graph_folder
+      filename: road_graph
+      filters: >
+        ["highway"]["area"!~"yes"]["access"!~"private"]
+        ["highway"!~"abandoned|bridleway|bus_guideway|construction|corridor|cycleway|elevator|
+        escalator|footway|no|path|pedestrian|planned|platform|proposed|raceway|razed|service|
+        steps|track"]
+        ["motor_vehicle"!~"no"]["motorcar"!~"no"]
+        ["service"!~"alley|driveway|emergency_access|parking|parking_aisle|private"]
+
+  - name: Transit_Graph
+    method: generate_transit_graph
+    key_val: &transit_graph tg
+    params:
+      folder: *graph_folder
+      filename: transit_graph
+      walk_key: *walk_graph
+      generation_params:
+        GTFS_folder: data/GTFS_data
+        crs: *crs
+        day: '20240321'
+        start_t: '06:00:00'
+        end_t: '20:00:00' 
+        municipality: *place_name

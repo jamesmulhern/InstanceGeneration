@@ -1,0 +1,44 @@
+--- # Scenario 1 - Public Schools - No population data
+defines:
+  V: &V 20000
+  sigma: &sigma 200
+  folder: &folder data/utility_datasets
+  save_folder: &save_folder data/utility
+
+points: 
+  folder: *folder
+  file: Point_Grid_10m.csv
+  spacing: &p_spacing 10
+  gen_scale: *V
+components:
+  - name: POI
+    method: add_sparse!
+    scale: 1
+    params:
+      volume: *V
+      spread: *sigma
+      smooth_func: GaussianVolume
+      folder: *folder
+      datasets:
+        - file: Public_Schools.csv
+          A: 1
+actions:
+  - name: save
+    method: save_utility
+    params:
+      folder: *save_folder
+      prefix: Scenario_1
+      label: Public_Schools
+      data:
+        - *V 
+        - *sigma
+        - *p_spacing
+      utility_threshold: 0.0001
+  - name: plot
+    method: plot_utility
+    params:
+      title: Scenario 1 - Public Schools - No Population
+      color_bar:
+        pallet: roma
+        rev: true
+        scale: exp

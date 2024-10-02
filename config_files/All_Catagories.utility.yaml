@@ -1,0 +1,79 @@
+---  # All Catagories
+defines:
+  V: &V 20000
+  sigma: &sigma 100
+  R: &R 0.7134
+  folder: &folder data/utility_datasets
+  save_folder: &save_folder data/utility
+
+points: 
+  folder: *folder
+  file: Point_Grid_10m.csv
+  spacing: &p_spacing 10
+  gen_scale: *V
+components:
+  - name: POI
+    method: add_sparse!
+    scale: 1
+    params:
+      volume: *V
+      spread: *sigma
+      smooth_func: GaussianVolume
+      folder: *folder
+      datasets: &datasets # Used weighted data from NHTS
+        - file: Work.csv
+          A: 0.2597
+        - file: School_Daycare_Religious.csv
+          A: 0.1085
+        - file: Medical_DentalServices.csv
+          A: 0.0334
+        - file: Shopping_Errands.csv
+          A: 0.2777
+        - file: Social_Recreational.csv
+          A: 0.1822
+        - file: Meals.csv
+          A: 0.1385
+  - name: Population Data
+    method: add_dense!
+    scale: *R
+    params: 
+      folder: *folder
+      file: winchester_pop_counts_night_points_26986.csv
+      data_field: Population_Count
+      spacing: 90
+actions:
+  - name: comp_ext_utility
+    method: ext_utility
+    params:
+      input:
+        folder: data/external_utility
+        points_file: External_Points.csv
+      output:
+        folder: *folder
+        file: all_cat_external_utility.csv
+      data:
+        folder: *folder
+        datasets: *datasets
+      scale: *V
+      dist_factor: 1.4
+  - name: save
+    method: save_utility
+    params:
+      folder: *save_folder
+      prefix: Winch
+      label: All_Catagories
+      data:
+        - *R 
+        - *V 
+        - *sigma
+        - *p_spacing
+      utility_threshold: 0
+  - name: plot
+    method: plot_utility
+    params:
+      title: Case Study - All Catagories - Night Population
+      color_bar:
+        pallet: roma
+        rev: true
+        scale: exp
+  
